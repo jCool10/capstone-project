@@ -655,8 +655,6 @@ def train(training_args, qa_dataloader, qa_dataloader_instance):
     full_model_config = {
         "quantization_config": quant_config,
         "trust_remote_code": True,
-        "load_in_8bit": use_8bit,
-        "load_in_4bit": use_4bit,
         "torch_dtype": model_dtype,
         "config": config,
     }
@@ -836,7 +834,7 @@ def train(training_args, qa_dataloader, qa_dataloader_instance):
     num_epochs = math.ceil(max_train_steps / num_update_steps_per_epoch)
 
     # On TPU, the tie weights in our model have been disconnected, so we need to restore the ties.
-    if accelerator.distributed_type == DistributedType.TPU:
+    if accelerator.distributed_type == DistributedType.TP:
         adapter.tie_weights()
 
     if checkpointing_steps or checkpoint_at_max_time or resume_from_checkpoint:

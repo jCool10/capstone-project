@@ -15,6 +15,10 @@ from src.dataloader import QADataloader
 from src.utils.advance_instruct_sample import AdvanceInstructSample
 from src.train import train
 
+import os
+
+os.environ["HF_TOKEN"] = "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"
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Your script description here.")
