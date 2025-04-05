@@ -12,6 +12,6 @@
       "@/*": ["src/*"]
     }
   },
-  "files": ["src/type.d.ts"], 
-  "include": ["src/**/*"]
+  "files": ["src/type.d.ts"],
+  "include": ["src/**/*", "src/type.d.ts"]
 }

@@ -3,15 +3,13 @@ import { SuccessResponse } from '@/core/success.response'
 import { errorHandler } from '@/middlewares/errorHandler.middleware'
 import { Application, NextFunction, Request, Response, Router } from 'express'
 import { authRouter } from './auth.route'
-
+import { apikey } from '@/utils/auth.util'
 export const apiRouter = (app: Application, router: Router) => {
   if (!app || !router) {
     throw new NotFoundError('Router not found')
   }
 
-  app.use('/api', router)
-
-  router.get('/healthCheck', (req: Request, res: Response) => {
+  app.get('/healthCheck', (req: Request, res: Response) => {
     new SuccessResponse({
       message: 'Health Check',
       data: {
@@ -19,6 +17,12 @@ export const apiRouter = (app: Application, router: Router) => {
       }
     }).send(res)
   })
+
+  // app.use(apikey)
+
+  // app.use(permission(Permission.USER))
+
+  app.use('/api', router)
 
   authRouter(router)
 

@@ -2,14 +2,16 @@ import winston from 'winston'
 import 'winston-daily-rotate-file'
 
 const format = winston.format.combine(
-  winston.format.colorize(),
-  winston.format.printf(({ level, message, service, origin = '', timestamp }) => {
-    const time = timestamp ? `\x1b[90m[${timestamp}]\x1b[0m ` : ''
-    const serviceText = service ? `\x1b[36m[${service}]\x1b[0m` : ''
-    const originText = origin ? ` \x1b[33m[${origin}]\x1b[0m` : ''
-    return `${time}${serviceText}${originText} ${level}: ${message}`
+  winston.format.timestamp({
+    format: 'YYYY-MM-DD HH:mm:ss'
   }),
-  winston.format.timestamp()
+  winston.format.printf((info) => {
+    const { level, message, service, origin = '', timestamp } = info
+    const time = timestamp ? `[${timestamp}]` : ''
+    const serviceText = service ? `[${service}]` : ''
+    const originText = origin ? `[${origin}]` : ''
+    return `${time}${serviceText}${originText} ${level}: ${message}`
+  })
 )
 
 const logger = winston.createLogger({
@@ -22,7 +24,6 @@ const logger = winston.createLogger({
     new winston.transports.DailyRotateFile({
       filename: `./logs/backend-%DATE%.log`,
       datePattern: 'YYYY-MM-DD-HH',
-      zippedArchive: true,
       maxSize: '20m',
       maxFiles: '14d',
       format: format

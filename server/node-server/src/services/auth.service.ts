@@ -5,13 +5,15 @@ import {
   NotFoundError,
   UnauthorizedError
 } from '@/core/error.response'
-import { UserModel } from '@/models/user.model'
+import User, { UserModel } from '@/models/user.model'
 import { comparePassword, hashPassword } from '@/utils/bcrypt'
 import { Request } from 'express'
 import crypto from 'crypto'
-import { createTokenPair } from '@/utils/jwt'
+import { createTokens } from '@/utils/jwt'
 import { getDataByField } from '@/utils'
 import { keyStoreService } from './keyStore,service'
+import userRepo from '@/repositories/user.repo'
+import keystoreRepo from '@/repositories/keystore.repo'
 
 export class authService {
   KeyStoreService: keyStoreService
@@ -23,16 +25,16 @@ export class authService {
   login = async (req: Request) => {
     const { email, password } = req.body
 
-    const user = await UserModel.findOne({ email }).lean()
+    const user = await userRepo.findByEmail(email)
 
     if (!user) {
-      throw new NotFoundError('User not found')
+      throw new UnauthorizedError('User not found')
     }
 
-    const matchPassword = await comparePassword(password, user.password)
+    const match = await comparePassword(password, user.password)
 
-    if (!matchPassword) {
-      throw new UnauthorizedError('Password is incorrect')
+    if (!match) {
+      throw new UnauthorizedError('Invalid password')
     }
 
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -47,29 +49,19 @@ export class authService {
       }
     })
 
-    const token = createTokenPair({ email, name: user.name, id: user._id.toString() }, privateKey)
+    const keystore = await keystoreRepo.create(user, publicKey, privateKey)
 
-    if (!token) {
-      throw new InternalServerError('Failed to create token')
-    }
+    const tokens = createTokens(user, keystore.privateKey)
 
-    await this.KeyStoreService.createKeyTokenPair(
-      { user: user._id.toString() },
-      publicKey,
-      privateKey,
-      token.refreshToken
-    )
+    const userData = getDataByField({ fields: ['email', 'name', '_id'], object: user })
 
-    return {
-      user: getDataByField({ fields: ['email', 'name'], object: user }),
-      token
-    }
+    return { user: userData, tokens }
   }
 
   signup = async (req: Request) => {
     const { email, password, name } = req.body
 
-    const isFoundedUser = await UserModel.find({ email }).lean()
+    const isFoundedUser = await userRepo.findByEmail(email)
 
     if (isFoundedUser) {
       throw new ConflictError('User already exists')
@@ -77,16 +69,6 @@ export class authService {
 
     const passwordHash = await hashPassword(password)
 
-    const newUser = await UserModel.create({
-      email,
-      password: passwordHash,
-      name
-    })
-
-    if (!newUser) {
-      throw new InternalServerError('Failed to create user')
-    }
-
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
       modulusLength: 4096,
       publicKeyEncoding: {
@@ -99,25 +81,26 @@ export class authService {
       }
     })
 
-    const token = createTokenPair({ email, name, id: newUser._id.toString() }, privateKey)
+    const { user: createdUser, keystore } = await userRepo.create(
+      {
+        email,
+        password: passwordHash,
+        name
+      } as User,
+      publicKey,
+      privateKey
+    )
 
-    if (!token) {
-      throw new InternalServerError('Failed to create token')
-    }
+    const tokens = createTokens({ email, name, id: createdUser._id.toString() }, keystore.privateKey)
 
-    await this.KeyStoreService.createKeyTokenPair({ user: newUser._id }, publicKey, privateKey, token.refreshToken)
+    const userData = getDataByField({ fields: ['email', 'name', '_id'], object: createdUser })
 
-    return {
-      user: getDataByField({ fields: ['email', 'name'], object: newUser }),
-      token
-    }
+    return { user: userData, tokens }
   }
 
   logout = async (req: Request) => {
-    const keyStore = req.keyStore
-    const delKey = await this.KeyStoreService.deleteOne(keyStore._id)
-
-    return delKey
+    await keystoreRepo.remove(req.keyStore._id)
+    return {}
   }
 
   refreshToken = async (req: Request) => {
@@ -125,26 +108,22 @@ export class authService {
     const { id, email, name } = user
 
     if (keyStore.refreshTokensUsed.includes(refreshToken)) {
-      await this.KeyStoreService.findByIdAndDelete({ id })
+      await keystoreRepo.remove(keyStore._id)
       throw new ForbiddenError('Something wrong happen!! Pls re-login')
     }
 
-    // console.log('keyStore:: ', keyStore)
-
     if (refreshToken !== keyStore.refreshToken) throw new UnauthorizedError('User not authorized')
 
-    const foundUser = await UserModel.findOne({ email }).lean()
+    const foundUser = await userRepo.findByEmail(email)
 
     if (!foundUser) throw new NotFoundError('Shop not found')
 
-    const tokens = createTokenPair({ id: id.toString(), email, name }, keyStore.privateKey)
+    const tokens = createTokens({ id: id.toString(), email, name }, keyStore.privateKey)
 
     if (!tokens) throw new InternalServerError('Failed to create token')
 
     // update keyStore
     keyStore.refreshTokensUsed.push(refreshToken)
-
-    console.log('keyStore:: ', keyStore)
 
     return { user, tokens }
   }

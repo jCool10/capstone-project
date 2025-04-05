@@ -1,6 +1,7 @@
+import User from '@/models/user.model'
 import jwt from 'jsonwebtoken'
 
-const createTokenPair = (payload: object, privateKey: string) => {
+const createTokens = (payload: object, privateKey: string) => {
   try {
     const accessToken = jwt.sign(payload, privateKey, {
       algorithm: 'RS256',
@@ -28,4 +29,6 @@ const verifyToken = (token: string, publicKey: string): any => {
   }
 }
 
-export { createTokenPair, verifyToken }
+const validateTokenData = (payload: any) => {}
+
+export { verifyToken, createTokens }

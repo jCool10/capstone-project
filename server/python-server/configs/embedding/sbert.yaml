@@ -1,0 +1,8 @@
+model_name: BAAI/bge-small-en
+token: null
+trust_remote_code: True
+device: cpu
+embedding_batch_size: 10
+pooling: cls
+max_length: 512
+normalize: True

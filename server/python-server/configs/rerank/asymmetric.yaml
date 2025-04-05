@@ -1,0 +1,8 @@
+rerank_model: asym
+model_name_or_path: pythera/mbert-rerank-base
+model: null
+tokenizer: null
+token: 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
+device: 0
+methods: huggingface
+proxies: null

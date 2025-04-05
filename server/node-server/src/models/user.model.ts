@@ -1,44 +1,59 @@
 'use strict'
 
-import { Schema, model } from 'mongoose'
+import { Schema, model, Types } from 'mongoose'
 
 const DOCUMENT_NAME = 'User'
 const COLLECTION_NAME = 'Users'
 
-const userSchema = new Schema(
+export default interface User {
+  _id: Types.ObjectId
+  name: string
+  email: string
+  password: string
+
+  verified?: boolean
+  status?: boolean
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+const userSchema = new Schema<User>(
   {
     name: {
-      type: String,
+      type: Schema.Types.String,
       trim: true,
-      maxLength: 150
-    },
-    email: {
-      type: String,
-      unique: true,
-      trim: true
-    },
-    password: {
-      type: String,
+      maxlength: 200,
       required: true
     },
-    status: {
-      type: String,
-      enum: ['active', 'inactive'],
-      default: 'inactive'
+    email: {
+      type: Schema.Types.String,
+      unique: true,
+      trim: true,
+      select: false,
+      required: true
     },
-    verify: {
+    password: {
+      type: Schema.Types.String,
+      select: false,
+      required: true
+    },
+    verified: {
       type: Schema.Types.Boolean,
       default: false
     },
-    roles: {
-      type: Array,
-      default: []
+    status: {
+      type: Schema.Types.Boolean,
+      default: true
     }
   },
   {
     timestamps: true,
-    collection: COLLECTION_NAME
+    collection: COLLECTION_NAME,
+    versionKey: false
   }
 )
+
+userSchema.index({ _id: 1, status: 1 })
+userSchema.index({ status: 1 })
 
 export const UserModel = model(DOCUMENT_NAME, userSchema)

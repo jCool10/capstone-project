@@ -8,9 +8,7 @@ import logger from './configs/logger.config'
 import { configs } from './configs'
 import { apiRouter } from './routes'
 
-import { instanceMongoDb } from './configs/mongoose.config'
-
-instanceMongoDb.connect()
+import './configs/mongoose.config'
 
 const PORT = configs.app.port
 
