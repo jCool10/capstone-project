@@ -1,0 +1,52 @@
+# Directory configuration
+directories:
+  data_dir: "data"
+  model_dir: "models"
+  cache_dir: "cache"
+
+# Model configuration
+models:
+  embedding:
+    model_name: "BAAI/bge-m3" # Changed to BAAI/bge-m3
+    device: "auto"
+    batch_size: 32
+    show_progress: true
+    cache_folder: "cache/embeddings"
+    normalize: true # BGE models work better with normalized embeddings
+
+  llm:
+    model_name: "./models"
+    max_length: 2048
+    max_new_tokens: 512
+    temperature: 0.7
+    top_p: 0.9
+    cache_folder: "cache/llm"
+    torch_dtype: "float16"
+    trust_remote_code: true # Required for loading local models
+
+# Document processing
+document_processing:
+  chunk_size: 512 # Reduced from 1024 to allow for more chunks
+  chunk_overlap: 128 # Reduced from 256 to maintain proportion
+  max_chunks_per_document: 10 # Limit number of chunks per document
+
+# Vector store configuration
+vector_store:
+  type: "milvus"
+  host: "localhost"
+  port: 19530
+  collection_name: "documents"
+  dimension: 1024 # Updated to match BGE-m3's output dimension
+  index_type: "IVF_FLAT"
+  metric_type: "L2"
+  nlist: 1024
+  uri: "http://localhost:19530"
+  embedding_name: "bge-m3"
+
+# Device configuration
+device: "mps" # Options: "auto", "cuda", "mps", "cpu"
+
+# Verbosity
+verbose: true
+
+max_workers: 10

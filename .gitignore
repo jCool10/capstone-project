@@ -8,3 +8,7 @@ __pycache__
 .env
 data/
 documents/
+.next
+volumes/
+.cursor/
+dataset

@@ -1,0 +1,12 @@
+services:
+  my_vllm:
+    image: vllm/vllm-openai:latest
+    container_name: my_vllm_container
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ports:
+      - "8000:8000"
+    command: >
+      vllm serve jCool10/chat-anything-3B
