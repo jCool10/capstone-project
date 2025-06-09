@@ -28,10 +28,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Refetch data when navigating from create page to any other page
   useEffect(() => {
-    const isComingFromCreate = sessionStorage.getItem("createdWorkspace")
-    if (isComingFromCreate && pathname !== "/create") {
-      refetch()
-      sessionStorage.removeItem("createdWorkspace")
+    // Check if running in browser before using sessionStorage
+    if (typeof window !== "undefined") {
+      const isComingFromCreate = sessionStorage.getItem("createdWorkspace")
+      if (isComingFromCreate && pathname !== "/create") {
+        refetch()
+        sessionStorage.removeItem("createdWorkspace")
+      }
     }
   }, [pathname, refetch])
 

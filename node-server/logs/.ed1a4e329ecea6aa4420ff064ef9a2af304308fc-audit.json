@@ -189,6 +189,56 @@
             "date": 1749399177476,
             "name": "logs/backend-2025-06-08-23.log",
             "hash": "37c27f79212a19cffad23f827117947fe4ff4530254220a81ee05225a97d82fd"
+        },
+        {
+            "date": 1749451360302,
+            "name": "logs/backend-2025-06-09-13.log",
+            "hash": "2addeb206e8e82a88c8e0156f2840b54b072542e50adbb2be7dde47ffe68b923"
+        },
+        {
+            "date": 1749452505982,
+            "name": "logs/backend-2025-06-09-14.log",
+            "hash": "3676d33a9b27333e18e4f645764cec14552403643e8455afbdcaf930c1821dfe"
+        },
+        {
+            "date": 1749456009413,
+            "name": "logs/backend-2025-06-09-15.log",
+            "hash": "d5d00c1caa9a5a32db59c6b0887655c4dc32f767ea214d38ad9519e3eff41691"
+        },
+        {
+            "date": 1749459606328,
+            "name": "logs/backend-2025-06-09-16.log",
+            "hash": "3e15a180416ff6610442ff912e9a9a327582cf7079f5eed8b644581318324d57"
+        },
+        {
+            "date": 1749463972901,
+            "name": "logs/backend-2025-06-09-17.log",
+            "hash": "6bcafdcf0bcae54bdb372b855015cf227851f89c8f8d4f067899831ca94a073f"
+        },
+        {
+            "date": 1749469834017,
+            "name": "logs/backend-2025-06-09-18.log",
+            "hash": "5e0ca949c1414f59c03f38fba2344e1064351dde817f49a0df97c7f90fcbb88c"
+        },
+        {
+            "date": 1749471217735,
+            "name": "logs/backend-2025-06-09-19.log",
+            "hash": "2428da6000d0472138121c12311c662f3d88e277d20d926e60a0e284557b3994"
+        },
+        {
+            "date": 1749479156764,
+            "name": "logs/backend-2025-06-09-21.log",
+            "hash": "14f6f26f5bdd1a990bd00f37f7d4eb3f490273cd7288c3b2979c9b68b733729b"
+        },
+        {
+            "date": 1749487750119,
+            "name": "logs/backend-2025-06-09-23.log",
+            "hash": "a9dd96be939fa4ad2c9dc3e777373e72a2e91a8ac5f2cb2790c805fb646df57d"
+        },
+        {
+            "date": 1749488423463,
+            "name": "logs/backend-2025-06-10-00.log",
+            "hash": "34619f6e24e6d1dfc4c46eb4e5e5f4ebaf49d24630dc32a6eed97e478a65771b"
         }
     ],
     "hashType": "sha256"

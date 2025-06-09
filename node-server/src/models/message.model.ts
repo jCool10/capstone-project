@@ -34,10 +34,12 @@ const messagesSchema = new Schema(
           type: String,
           required: true
         },
-        sourceDocs: {
-          type: [String],
-          default: []
-        }
+        sourceDocs: [
+          {
+            text: String,
+            metadata: Object
+          }
+        ]
       }
     ]
   },

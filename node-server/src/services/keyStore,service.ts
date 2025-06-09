@@ -1,4 +1,4 @@
-import { KeyTokenModel } from '@/models/keyStore.model'
+import { KeystoreModel } from '@/models/keyStore.model'
 
 export class keyStoreService {
   async createKeyTokenPair(payload: object, publicKey: string, privateKey: string, refreshToken: string) {
@@ -6,7 +6,7 @@ export class keyStoreService {
     const update = { publicKey, privateKey, refreshToken, refreshTokenUsed: [] }
     const options = { upsert: true, new: true }
 
-    const tokens = await KeyTokenModel.findOneAndUpdate(filter, update, options)
+    const tokens = await KeystoreModel.findOneAndUpdate(filter, update, options)
 
     if (!tokens) {
       throw new Error('Failed to create tokens')
@@ -16,18 +16,18 @@ export class keyStoreService {
   }
 
   async updateOne(payload: object, update: object) {
-    return await KeyTokenModel.updateOne(payload, update, { new: true, upsert: true })
+    return await KeystoreModel.updateOne(payload, update, { new: true, upsert: true })
   }
 
   async deleteOne(payload: object) {
-    return await KeyTokenModel.deleteOne(payload)
+    return await KeystoreModel.deleteOne(payload)
   }
 
   async findByIdAndDelete(payload: object) {
-    return await KeyTokenModel.findByIdAndDelete(payload)
+    return await KeystoreModel.findByIdAndDelete(payload)
   }
 
   async findOne(payload: object) {
-    return await KeyTokenModel.findOne(payload)
+    return await KeystoreModel.findOne(payload)
   }
 }

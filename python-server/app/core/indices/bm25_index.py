@@ -4,9 +4,8 @@ import pickle
 import os
 import logging
 import numpy as np
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from core.document import Document
+
+from ..document import Document
 
 logger = logging.getLogger(__name__)
 

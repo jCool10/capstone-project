@@ -4,9 +4,8 @@ import { downloadFile } from '@/utils/s3'
 import messageRepo from '@/repositories/message.repo'
 import axios from 'axios'
 import { BadRequestError, NotFoundError } from '@/core/error.response'
-import { MessageType } from '@/models/message.model'
 
-const LLM_API = 'http://localhost:8080'
+const RAG_API_URL = process.env.NODE_ENV === 'production' ? 'http://python-server:8080' : 'http://0.0.0.0:8080'
 
 class filesService {
   async embedFiles(req: Request) {
@@ -31,7 +30,7 @@ class filesService {
       throw new BadRequestError('Failed to create workspace')
     }
 
-    const result = await axios.post(`${LLM_API}/embed`, {
+    const result = await axios.post(`${RAG_API_URL}/embed`, {
       file_paths: filePaths,
       collection_name: newWorkspace.slug
     })
@@ -56,7 +55,7 @@ class filesService {
       throw new NotFoundError('Workspace not found')
     }
 
-    const result = await axios.post(`${LLM_API}/embed`, {
+    const result = await axios.post(`${RAG_API_URL}/embed`, {
       file_paths: workspace.filePaths,
       collection_name: workspaceSlug
     })
@@ -116,32 +115,27 @@ class filesService {
     const { question } = req.body
     const messages = await messageRepo.getMessages(workspaceSlug, 3)
 
-    const query = await axios.post(`${LLM_API}/query`, {
+    const response = await axios.post(`${RAG_API_URL}/query`, {
       query: question,
       collection_name: workspaceSlug,
       history: messages.flatMap((message) => message.messages.map((msg) => msg.message))
     })
 
-    console.log(query.data)
+    const responseData = response.data.data
 
-    const responseData = query.data
+    console.log(responseData)
 
-    // Extract source documents from Python server response
-    const sourceDocuments =
-      responseData.data?.docs.map((doc: any) => {
-        console.log(doc)
-        return doc.text || doc.id || JSON.stringify(doc)
-      }) || []
+    const sourceDocuments = responseData.docs.map((doc: any) => ({
+      text: doc.text,
+      metadata: doc.metadata
+    }))
 
-    await messageRepo.findOneAndUpdate(workspaceSlug, question, responseData.data?.response, sourceDocuments)
+    await messageRepo.findOneAndUpdate(workspaceSlug, question, responseData.response, sourceDocuments)
 
-    // Format response for frontend
     return {
-      ...responseData,
-      data: {
-        response: responseData.data?.response || responseData.message || '',
-        sourceDocuments: sourceDocuments
-      }
+      type: 'apiMessage',
+      message: responseData.response,
+      sourceDocs: sourceDocuments
     }
   }
 }

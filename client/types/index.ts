@@ -37,10 +37,8 @@ export interface ExtendedMessage extends IMessage {
 
 export interface SourceDocument {
   id: string
-  content: string
+  text: string
   metadata: {
-    source: string
-    page?: number
-    score?: number
+    file_name: string
   }
 }

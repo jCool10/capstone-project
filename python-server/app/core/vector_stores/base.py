@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Tuple, Sequence, Iterable
 
-# Import Document từ module cha
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from document import Document
+from ..document import Document
 
 class VectorStore(ABC):
     """Base class for vector stores."""

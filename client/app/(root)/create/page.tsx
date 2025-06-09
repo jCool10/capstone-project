@@ -64,7 +64,9 @@ export default function CreatePage() {
 
     embedFilesMutation.mutate(formData, {
       onSuccess: (data) => {
-        sessionStorage.setItem("createdWorkspace", "true")
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("createdWorkspace", "true")
+        }
 
         toast({
           title: "Workspace created",

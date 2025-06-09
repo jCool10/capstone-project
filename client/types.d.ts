@@ -15,11 +15,24 @@ export interface IWorkspace {
   slug: string
   user: string
   model: string
+  isEmbedded: boolean
 }
 
 export interface IMessage {
   _id?: string
+  messages: {
+    content: string
+    role: string
+    workspaceSlug: string
+  }[]
+}
+
+export interface IMessages {
+  _id?: string
   content: string
   role: string
   workspaceSlug: string
+  sourceDocuments?: {
+    content: string
+  }[]
 }

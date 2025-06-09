@@ -3,7 +3,7 @@
 import React, { Fragment, useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import { getMessages, getWorkspace, queryWorkspace } from "@/apis/files"
-import { IMessage, IWorkspace } from "@/types"
+import { IMessage, IMessages, IWorkspace } from "@/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Bot, Edit, FileText, Info, Plus, Send, Sparkles, Upload, User } from "lucide-react"
 
@@ -24,13 +24,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import FileUploader, { FileWithMetadata } from "@/components/FileUploader"
-import EmbedStatusBanner from "@/components/shared/EmbedStatusBanner"
 import SourceDocumentsButton from "@/components/shared/SourceDocumentsButton"
 import SourceDocumentsModal from "@/components/shared/SourceDocumentsModal"
 
 // Extend workspace type for this component
 interface ExtendedWorkspace extends IWorkspace {
-  isEmbedded?: boolean
+  isEmbedded: boolean
   filePaths?: string[]
   createdAt?: string
   _id?: string
@@ -38,7 +37,7 @@ interface ExtendedWorkspace extends IWorkspace {
 
 export default function WorkspacePage() {
   const { slug } = useParams()
-  const [messages, setMessages] = useState<IMessage[]>([])
+  const [messages, setMessages] = useState<IMessages[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -68,30 +67,7 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (messagesData) {
       // Transform messages from backend format to frontend format
-      const transformedMessages: IMessage[] = []
-      messagesData.forEach((messageGroup: any) => {
-        if (messageGroup.messages) {
-          messageGroup.messages.forEach((msg: any) => {
-            transformedMessages.push({
-              _id: messageGroup._id + "_" + Math.random().toString(36).substr(2, 9),
-              message: msg.message,
-              type: msg.type,
-              workspaceSlug: messageGroup.workspaceSlug,
-              sourceDocs: msg.sourceDocs || [],
-              // For backward compatibility
-              content: msg.message,
-              role: msg.type === "userMessage" ? "user" : "assistant",
-              sourceDocuments:
-                msg.sourceDocs?.map((doc: string) => ({
-                  id: Math.random().toString(36).substr(2, 9),
-                  content: doc,
-                  metadata: { source: "document" },
-                })) || [],
-            })
-          })
-        }
-      })
-      setMessages(transformedMessages)
+      setMessages(messagesData[0]?.messages || [])
     }
   }, [messagesData])
 
@@ -99,23 +75,7 @@ export default function WorkspacePage() {
     mutationFn: (question: string) => queryWorkspace(slug as string, question),
     onSuccess: (data) => {
       console.log(data)
-      setMessages((prev) => [
-        ...prev,
-        {
-          message: data.data.response,
-          type: "apiMessage" as const,
-          workspaceSlug: slug as string,
-          sourceDocs: data.data.sourceDocuments || [],
-          content: data.data.response,
-          role: "assistant" as const,
-          sourceDocuments:
-            data.data.sourceDocuments?.map((doc: any) => ({
-              id: Math.random().toString(36).substr(2, 9),
-              content: typeof doc === "string" ? doc : doc.text || doc.content || "",
-              metadata: { source: doc.fileName || "document" },
-            })) || [],
-        } as IMessage,
-      ])
+      setMessages((prev) => [...prev, data])
     },
   })
 
@@ -173,12 +133,10 @@ export default function WorkspacePage() {
     if (!input.trim()) return
 
     const userMessage = {
-      message: input,
-      type: "userMessage" as const,
-      workspaceSlug: slug as string,
       content: input,
-      role: "user" as const,
-    } as IMessage
+      role: "user",
+      workspaceSlug: slug as string,
+    } as IMessages
 
     setMessages((prev) => [...prev, userMessage])
     setInput("")
@@ -277,14 +235,7 @@ export default function WorkspacePage() {
                 const messageType = msg.type || (msg.role === "user" ? "userMessage" : "apiMessage")
                 const messageContent = msg.message || msg.content || ""
                 const isApiMessage = messageType === "apiMessage"
-                const sourceDocuments =
-                  msg.sourceDocuments ||
-                  msg.sourceDocs?.map((doc: string) => ({
-                    id: Math.random().toString(36).substr(2, 9),
-                    content: doc,
-                    metadata: { source: "document" },
-                  })) ||
-                  []
+                const sourceDocuments = msg.sourceDocs || []
 
                 return (
                   <div

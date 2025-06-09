@@ -1,9 +1,17 @@
 import { Schema, model, Types } from 'mongoose'
-// import { nanoid } from 'nanoid'
-import { customAlphabet } from 'nanoid'
 
 const DOCUMENT_NAME = 'Workspace'
 const COLLECTION_NAME = 'Workspaces'
+
+function generateSlug(length: number = 10): string {
+  const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let slug = ''
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length)
+    slug += characters[randomIndex]
+  }
+  return slug
+}
 
 export default interface Workspace {
   _id?: Types.ObjectId
@@ -30,7 +38,7 @@ const workspaceSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      default: () => `wo${customAlphabet('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 10)()}`
+      default: () => `wo${generateSlug()}`
     },
     user: {
       type: Schema.Types.ObjectId,

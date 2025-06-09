@@ -1,5 +1,5 @@
 import { getWorkspace, getWorkspaces, queryWorkspace } from "@/apis/files"
-import { IMessage, IWorkspace } from "@/types"
+import { IMessages, IWorkspace } from "@/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { useAuth } from "@/hooks/useAuth"
@@ -42,7 +42,7 @@ export const useWorkspace = (slug: string) => {
             content: data.data.response,
             role: "assistant",
             workspaceSlug: slug,
-          } as IMessage,
+          } as IMessages,
         ],
       }))
     },
@@ -50,7 +50,6 @@ export const useWorkspace = (slug: string) => {
 
   return {
     workspace: workspace?.workspace as IWorkspace,
-    messages: workspace?.messages as IMessage[],
     query,
     ...workspaceQuery,
     ...queryMutation,

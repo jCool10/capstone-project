@@ -50,7 +50,7 @@ export default function LoginPage() {
   )
 }
 
-export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
+function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const { isAuthenticated, setAccessToken, setRefreshToken, setUser } = useAuth()
   const { toast } = useToast()
 

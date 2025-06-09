@@ -11,6 +11,7 @@ beautifulsoup4==4.13.4
 cbor==1.0.0
 certifi==2025.4.26
 charset-normalizer==3.4.2
+click==8.2.1
 coloredlogs==15.0.1
 comm==0.2.2
 datasets==3.6.0
@@ -25,6 +26,7 @@ flatbuffers==25.2.10
 frozenlist==1.6.0
 fsspec==2025.3.0
 grpcio==1.67.1
+h11==0.16.0
 huggingface-hub==0.31.2
 humanfriendly==10.0
 idna==3.10
@@ -77,6 +79,7 @@ python-dotenv==1.1.0
 pytz==2025.2
 PyYAML==6.0.2
 pyzmq==26.4.0
+rank-bm25==0.2.2
 regex==2024.11.6
 requests==2.32.3
 safetensors==0.5.3
@@ -105,9 +108,9 @@ tzdata==2025.2
 ujson==5.10.0
 unlzw3==0.2.3
 urllib3==2.4.0
+uvicorn==0.34.3
 warc3-wet==0.2.5
 warc3-wet-clueweb09==0.2.5
 wcwidth==0.2.13
 xxhash==3.5.0
 yarl==1.20.0
-zlib-state==0.1.9

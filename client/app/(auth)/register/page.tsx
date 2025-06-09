@@ -65,7 +65,7 @@ export default function RegisterPage() {
   )
 }
 
-export function SignUpForm({ className, ...props }: SignUpFormProps) {
+function SignUpForm({ className, ...props }: SignUpFormProps) {
   const auth = useAuth()
   const { toast } = useToast()
   const registerMutation = useMutation({

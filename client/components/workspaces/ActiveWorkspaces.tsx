@@ -3,9 +3,6 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { Settings, Square, Upload } from "lucide-react"
-import truncate from "truncate"
-
-import { Button } from "../ui/button"
 
 export default function ActiveWorkspaces() {
   const [workspaces, setWorkspaces] = useState<any[]>([
@@ -33,17 +30,14 @@ export default function ActiveWorkspaces() {
             key={workspace.id}
             role="listitem"
           >
-            <Link
-              href={`/workspace/${workspace.slug}`}
-              className=" flex gap-2 text-sm items-center"
-            >
-              <Square weight={isActive ? "fill" : "regular"} size={24} />
+            <Link href={`/workspace/${workspace.slug}`} className=" flex gap-2 text-sm items-center">
+              <Square fontWeight={isActive ? "fill" : "regular"} size={24} />
               {workspace.name}
             </Link>
 
             {/* <Button variant="outline" size={"icon"}> */}
 
-            <Settings size={20} weight="bold" />
+            <Settings size={20} fontWeight="bold" />
             {/* </Button> */}
           </div>
         )

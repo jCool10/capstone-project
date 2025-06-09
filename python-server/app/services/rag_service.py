@@ -1,37 +1,37 @@
-import sys
 import os
-
-# Add the project root directory to Python path
-sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
-
+import time
+import yaml
+import logging
+import requests
 from typing import Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from core.text_splitters.sentence_splitter import SentenceSplitter
 from core.vector_stores.milvus import MilvusVectorStore
 from core.document_loaders.file_loader import FileLoader
 from core.retrievers.hybrid_searcher import HybridSearchEngine
-import yaml
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
-import time
-import os
-import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# LLM_API = "http://localhost:1234/v1/chat/completions"
+LLM_API = "http://34.81.24.168:8000/v1/chat/completions"
 
 class RAGService:
     def __init__(self, max_workers: int = 4):
         self.config = self._load_config()
+        
+        # Get Milvus connection details from environment variables or config
+        # milvus_host = os.environ.get("MILVUS_HOST", self.config["vector_store"]["host"])
+        # milvus_port = os.environ.get("MILVUS_PORT", self.config["vector_store"]["port"])
+
+        milvus_uri = os.environ.get("MILVUS_URI", self.config["vector_store"]["uri"])
+        
         self.splitter = SentenceSplitter(
             chunk_size=self.config["document_processing"]["chunk_size"],
             chunk_overlap=self.config["document_processing"]["chunk_overlap"],
         )
         self.vector_store = MilvusVectorStore(
-            uri=self.config["vector_store"]["uri"],
+            uri=milvus_uri,
             embedding_name=self.config["vector_store"]["embedding_name"],
         )
         
@@ -221,13 +221,13 @@ class RAGService:
         Bạn là một trợ lý thông minh. Dựa vào các đoạn ngữ cảnh được cung cấp, hãy trả lời câu hỏi của người dùng một cách chính xác, rõ ràng và tự nhiên.
 
         Ngữ cảnh:
-        {{context}}
+        {context}
 
         Các câu hỏi trước đó (nếu có):
-        {{history}}
+        {history}
 
         Câu hỏi hiện tại:
-        {{query}}
+        {query}
 
         Yêu cầu:
         - Trả lời ngắn gọn, đúng trọng tâm, dựa trên ngữ cảnh.
@@ -287,17 +287,22 @@ class RAGService:
         llm_prompt = self._create_prompt_from_docs(query, docs, history)
 
         # Call LLM API
-        # response = requests.post(LLM_API, json={
-        #     "model": "gpt-4o-mini",
-        #     "messages": [{"role": "user", "content": llm_prompt}],
-        #     "max_tokens": 1000
-        # })
+        response = requests.post(LLM_API, json={
+            "model": "jCool10/jCool10-LLaMA3-VietQA-3B-merged",
+            "messages": [
+                {
+                    "role": "user", 
+                    "content": llm_prompt
+                    }
+            ],
+            "max_tokens": 1000
+        })
 
-        # if response.status_code == 200:
-        #     response_data = response.json()
-        #     response_text = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        # else:
-        response_text = "Đây là kết quả trả về từ LLLM"
+        if response.status_code == 200:
+            response_data = response.json()
+            response_text = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        else:
+            response_text = "Đây là kết quả trả về từ LLLM"
 
         return {
             "code": 200,

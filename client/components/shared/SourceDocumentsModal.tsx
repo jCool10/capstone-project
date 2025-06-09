@@ -17,6 +17,8 @@ interface SourceDocumentsModalProps {
 }
 
 export default function SourceDocumentsModal({ isOpen, onClose, sourceDocuments }: SourceDocumentsModalProps) {
+  console.log(sourceDocuments)
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -37,25 +39,11 @@ export default function SourceDocumentsModal({ isOpen, onClose, sourceDocuments 
                     <Badge variant="outline" className="text-xs">
                       #{index + 1}
                     </Badge>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {doc.metadata.source.split("/").pop() || "Tài liệu"}
-                    </span>
-                    {doc.metadata.page && (
-                      <Badge variant="secondary" className="text-xs">
-                        Trang {doc.metadata.page}
-                      </Badge>
-                    )}
                   </div>
-                  {doc.metadata.score && (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs text-muted-foreground">{(doc.metadata.score * 100).toFixed(1)}%</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="text-sm leading-relaxed">
-                  <p className="whitespace-pre-wrap">{doc.content}</p>
+                  <p className="whitespace-pre-wrap">{doc.text}</p>
                 </div>
               </Card>
             ))}
