@@ -15,33 +15,31 @@ export interface IMessage {
 }
 
 export interface IMessages {
-  _id: Types.ObjectId
-  workspaceId: Types.ObjectId
+  _id?: Types.ObjectId
+  workspaceSlug: string
   messages: IMessage[]
 }
 
-const messageSchema = new Schema(
-  {
-    type: {
-      type: String,
-      enum: Object.values(MessageType),
-      required: true
-    },
-    message: {
-      type: String,
-      required: true
-    },
-    sourceDocs: Array
-  },
-  {
-    _id: false
-  }
-)
-
 const messagesSchema = new Schema(
   {
-    workspaceId: { type: Schema.Types.ObjectId, required: true },
-    messages: [messageSchema]
+    workspaceSlug: { type: String, required: true },
+    messages: [
+      {
+        type: {
+          type: String,
+          enum: Object.values(MessageType),
+          required: true
+        },
+        message: {
+          type: String,
+          required: true
+        },
+        sourceDocs: {
+          type: [String],
+          default: []
+        }
+      }
+    ]
   },
   { timestamps: true, collection: COLLECTION_NAME }
 )

@@ -12,7 +12,7 @@ rag_service = RAGService()
 class QueryRequest(BaseModel):
     query: str
     collection_name: str
-
+    history: List[str]
 class EmbedRequest(BaseModel):
     file_paths: List[str]
     collection_name: str
@@ -24,7 +24,7 @@ def read_root():
 
 @app.post("/query")
 def query(request: QueryRequest):
-    return rag_service.query_documents(request.query, request.collection_name)
+    return rag_service.query_documents(request.query, request.collection_name, request.history)
 
 @app.post("/embed")
 def embed(request: EmbedRequest):

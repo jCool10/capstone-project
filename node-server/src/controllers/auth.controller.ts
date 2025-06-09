@@ -36,4 +36,32 @@ export class authController {
       data: await this.authService.refreshToken(req)
     }).send(res)
   }
+
+  rotateKeys = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Keys rotated successfully',
+      data: await this.authService.rotateKeys(req)
+    }).send(res)
+  }
+
+  getPublicKey = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Public key retrieved successfully',
+      data: await this.authService.getPublicKey(req)
+    }).send(res)
+  }
+
+  encryptData = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Data encrypted successfully',
+      data: await this.authService.encryptData(req)
+    }).send(res)
+  }
+
+  decryptData = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Data decrypted successfully',
+      data: await this.authService.decryptData(req)
+    }).send(res)
+  }
 }

@@ -1,0 +1,1 @@
+from .bm25_index import VietnameseBM25Index 

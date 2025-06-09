@@ -1,5 +1,6 @@
 import { Schema, model, Types } from 'mongoose'
-import { nanoid } from 'nanoid'
+// import { nanoid } from 'nanoid'
+import { customAlphabet } from 'nanoid'
 
 const DOCUMENT_NAME = 'Workspace'
 const COLLECTION_NAME = 'Workspaces'
@@ -11,6 +12,12 @@ export default interface Workspace {
   user: Types.ObjectId
   isEmbedded?: boolean
   filePaths?: string[]
+  fileKeys?: string[]
+}
+
+export enum MessageType {
+  API_MESSAGE = 'apiMessage',
+  USER_MESSAGE = 'userMessage'
 }
 
 const workspaceSchema = new Schema(
@@ -23,7 +30,7 @@ const workspaceSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      default: () => `wo${nanoid(10)}`
+      default: () => `wo${customAlphabet('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 10)()}`
     },
     user: {
       type: Schema.Types.ObjectId,
@@ -34,6 +41,10 @@ const workspaceSchema = new Schema(
       default: false
     },
     filePaths: {
+      type: [String],
+      default: []
+    },
+    fileKeys: {
       type: [String],
       default: []
     }

@@ -36,3 +36,8 @@ export const queryWorkspace = async (workspaceSlug: string, question: string) =>
   })
   return response.data
 }
+
+export const getMessages = async (workspaceSlug: string) => {
+  const response = await axiosInstance.get<IMessage[]>(endpoints.files.messages(workspaceSlug))
+  return response.data
+}

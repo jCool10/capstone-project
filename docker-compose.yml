@@ -9,4 +9,4 @@ services:
     ports:
       - "8000:8000"
     command: >
-      vllm serve jCool10/chat-anything-3B
+      vllm serve jCool10/jCool10-LLaMA3-VietQA-3B-merged

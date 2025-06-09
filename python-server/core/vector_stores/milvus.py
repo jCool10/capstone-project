@@ -6,16 +6,24 @@ from pymilvus import (
     CollectionSchema,
     utility,
 )
-from pymilvus import MilvusClient, model
+from pymilvus import MilvusClient
 import logging
 import json
 import concurrent.futures
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import math
 import time
 from rank_bm25 import BM25Okapi
 import numpy as np
 from sentence_transformers import CrossEncoder
+from datetime import datetime
+
+try:
+    from pymilvus import model
+    PYMILVUS_MODEL_AVAILABLE = True
+except ImportError:
+    PYMILVUS_MODEL_AVAILABLE = False
+    model = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -4,6 +4,7 @@ import { downloadFile } from '@/utils/s3'
 import messageRepo from '@/repositories/message.repo'
 import axios from 'axios'
 import { BadRequestError, NotFoundError } from '@/core/error.response'
+import { MessageType } from '@/models/message.model'
 
 const LLM_API = 'http://localhost:8080'
 
@@ -22,7 +23,8 @@ class filesService {
     const newWorkspace = await workspaceRepo.create({
       name: workspaceName,
       user: user._id,
-      filePaths
+      filePaths,
+      fileKeys: files.map((file) => file.key)
     })
 
     if (!newWorkspace) {
@@ -46,7 +48,7 @@ class filesService {
   }
 
   async reEmbedFiles(req: Request) {
-    const { workspaceSlug } = req.params
+    const { workspaceSlug } = req.body
 
     const workspace = await workspaceRepo.findBySlug(workspaceSlug)
 
@@ -81,8 +83,8 @@ class filesService {
   }
 
   async getMessages(req: Request) {
-    const { workspaceId } = req.params
-    const messages = await messageRepo.getMessages(workspaceId)
+    const { workspaceSlug } = req.params
+    const messages = await messageRepo.getMessages(workspaceSlug)
     return messages
   }
 
@@ -101,10 +103,6 @@ class filesService {
       throw new NotFoundError('Workspace not found')
     }
 
-    if (!workspace.isEmbedded) {
-      await this.reEmbedFiles(req)
-    }
-
     const messages = await messageRepo.getMessages(workspaceSlug)
 
     return {
@@ -116,13 +114,35 @@ class filesService {
   async queryWorkspace(req: Request) {
     const { workspaceSlug } = req.params
     const { question } = req.body
+    const messages = await messageRepo.getMessages(workspaceSlug, 3)
 
     const query = await axios.post(`${LLM_API}/query`, {
       query: question,
-      collection_name: workspaceSlug
+      collection_name: workspaceSlug,
+      history: messages.flatMap((message) => message.messages.map((msg) => msg.message))
     })
 
-    return query.data
+    console.log(query.data)
+
+    const responseData = query.data
+
+    // Extract source documents from Python server response
+    const sourceDocuments =
+      responseData.data?.docs.map((doc: any) => {
+        console.log(doc)
+        return doc.text || doc.id || JSON.stringify(doc)
+      }) || []
+
+    await messageRepo.findOneAndUpdate(workspaceSlug, question, responseData.data?.response, sourceDocuments)
+
+    // Format response for frontend
+    return {
+      ...responseData,
+      data: {
+        response: responseData.data?.response || responseData.message || '',
+        sourceDocuments: sourceDocuments
+      }
+    }
   }
 }
 

@@ -10,15 +10,18 @@ from typing import Dict, Any, List
 from core.text_splitters.sentence_splitter import SentenceSplitter
 from core.vector_stores.milvus import MilvusVectorStore
 from core.document_loaders.file_loader import FileLoader
+from core.retrievers.hybrid_searcher import HybridSearchEngine
 import yaml
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import time
 import os
+import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# LLM_API = "http://localhost:1234/v1/chat/completions"
 
 class RAGService:
     def __init__(self, max_workers: int = 4):
@@ -31,6 +34,13 @@ class RAGService:
             uri=self.config["vector_store"]["uri"],
             embedding_name=self.config["vector_store"]["embedding_name"],
         )
+        
+        # Initialize hybrid search engine
+        self.hybrid_engine = HybridSearchEngine(
+            vector_store=self.vector_store,
+            config=self.config
+        )
+        
         self.max_workers = max_workers  # Maximum number of threads
 
     def _load_config(self, config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -92,6 +102,7 @@ class RAGService:
                     "code": 200,
                     "message": "Documents embedded successfully",
                     "data": result,
+                    "chunks": chunks  # Return chunks for BM25 indexing
                 }
             else:
                 return {
@@ -106,7 +117,7 @@ class RAGService:
             return {"code": 500, "success": False, "message": str(e), "data": None}
 
     def embed_documents(self, file_paths: List[str], collection_name: str):
-        """Embed multiple documents in parallel using multithreading.
+        """Embed multiple documents in parallel using multithreading and build BM25 index.
 
         Args:
             file_paths: List of paths to files for embedding
@@ -131,6 +142,7 @@ class RAGService:
         results = []
         successful = 0
         failed = 0
+        all_chunks = []  # Collect all chunks for BM25 indexing
 
         # Determine optimal number of workers (no more than number of files)
         workers = min(self.max_workers, total_files)
@@ -151,6 +163,9 @@ class RAGService:
                 results.append(res)
                 if res["success"]:
                     successful += 1
+                    # Collect chunks for BM25 indexing
+                    chunks = res.get("chunks", [])
+                    all_chunks.extend(chunks)
                 else:
                     failed += 1
 
@@ -158,14 +173,27 @@ class RAGService:
             f"Completed embedding {total_files} files. Success: {successful}, Failed: {failed}"
         )
 
+        # Build BM25 index if hybrid search is enabled
+        bm25_result = None
+        if self.config.get("hybrid_search", {}).get("enabled", False) and all_chunks:
+            logger.info(f"Building BM25 index with {len(all_chunks)} chunks")
+            bm25_success = self.hybrid_engine.build_bm25_index(collection_name, all_chunks)
+            bm25_result = {
+                "success": bm25_success,
+                "chunks_indexed": len(all_chunks) if bm25_success else 0
+            }
+
         return {
             "code": 200,
             "success": True,
             "message": "Documents embedded successfully",
-            "data": results,
+            "data": {
+                "embedding_results": results,
+                "bm25_index": bm25_result
+            },
         }
 
-    def _create_prompt_from_docs(self, query: str, docs: List[Dict]) -> str:
+    def _create_prompt_from_docs(self, query: str, docs: List[Dict], history: List[Dict]) -> str:
         """Create a prompt from retrieved documents for LLM processing.
 
         Args:
@@ -189,52 +217,188 @@ class RAGService:
         context = "\n".join(context_parts)
 
         # Create the prompt with instructions, context and query
-        prompt = f"""Dưới đây là một số đoạn văn bản liên quan đến câu hỏi của người dùng. 
-Hãy sử dụng thông tin trong các đoạn văn này để trả lời câu hỏi.
-Nếu không tìm thấy thông tin trong các đoạn văn, hãy cho biết bạn không có đủ thông tin để trả lời.
-Trả lời bằng tiếng Việt, ngắn gọn, rõ ràng và dễ hiểu.
+        prompt = f"""
+        Bạn là một trợ lý thông minh. Dựa vào các đoạn ngữ cảnh được cung cấp, hãy trả lời câu hỏi của người dùng một cách chính xác, rõ ràng và tự nhiên.
 
-NGỮ CẢNH:
-{context}
+        Ngữ cảnh:
+        {{context}}
 
-CÂU HỎI: {query}
+        Các câu hỏi trước đó (nếu có):
+        {{history}}
 
-TRẢ LỜI:"""
+        Câu hỏi hiện tại:
+        {{query}}
+
+        Yêu cầu:
+        - Trả lời ngắn gọn, đúng trọng tâm, dựa trên ngữ cảnh.
+        - Nếu không đủ thông tin, hãy nói rõ là chưa có thông tin.
+        - Không bịa thêm nội dung ngoài ngữ cảnh.
+        """
 
         return prompt
 
-    def query_documents(self, query: str, collection_name: str):
-        """Query documents and prepare a prompt for LLM.
+    def query_documents(self, query: str, collection_name: str, use_hybrid: bool = None, history: List[str] = None):
+        """Query documents using hybrid or dense search and prepare a prompt for LLM.
 
         Args:
             query: User query string
             collection_name: Name of the collection to search
+            use_hybrid: Override hybrid search setting (None=use config, True/False=override)
 
         Returns:
             Response including retrieved documents and LLM prompt
         """
-        retrieved_docs = self.vector_store.query(query, collection_name)
-
-        # Extract the actual document data
-        docs = retrieved_docs
+        # Determine if we should use hybrid search
+        if use_hybrid is None:
+            use_hybrid = self.config.get("hybrid_search", {}).get("enabled", False)
+            
+        final_k = self.config.get("hybrid_search", {}).get("final_k", 5)
+        
+        if use_hybrid:
+            # Use hybrid search
+            search_result = self.hybrid_engine.search(
+                query=query,
+                collection_name=collection_name,
+                top_k=final_k,
+                use_hybrid=True
+            )
+            
+            if search_result.get("success", False):
+                docs = search_result.get("results", [])
+                search_method = search_result.get("search_method", "hybrid")
+                search_stats = {
+                    "method": search_method,
+                    "fusion_method": search_result.get("fusion_method"),
+                    "search_time": search_result.get("search_time"),
+                    "fusion_stats": search_result.get("fusion_stats")
+                }
+            else:
+                # Fall back to dense search
+                docs = self.vector_store.query(query, collection_name)
+                search_method = "dense_fallback"
+                search_stats = {"method": search_method}
+        else:
+            # Use dense search only
+            docs = self.vector_store.query(query, collection_name)
+            search_method = "dense"
+            search_stats = {"method": search_method}
 
         # Create a prompt for LLM from the retrieved documents
-        llm_prompt = self._create_prompt_from_docs(query, docs)
+        llm_prompt = self._create_prompt_from_docs(query, docs, history)
 
-        # llm_prompt -> llm model -> response
-       
+        # Call LLM API
+        # response = requests.post(LLM_API, json={
+        #     "model": "gpt-4o-mini",
+        #     "messages": [{"role": "user", "content": llm_prompt}],
+        #     "max_tokens": 1000
+        # })
+
+        # if response.status_code == 200:
+        #     response_data = response.json()
+        #     response_text = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        # else:
+        response_text = "Đây là kết quả trả về từ LLLM"
 
         return {
             "code": 200,
             "success": True,
             "message": "Documents queried successfully",
-            "data": {"docs": docs, "response": llm_prompt},
+            "data": {
+                "docs": docs, 
+                "response": response_text,
+                "search_stats": search_stats,
+                "total_docs": len(docs)
+            },
         }
 
+    def get_collection_stats(self, collection_name: str):
+        """Get statistics for a collection including hybrid search capabilities.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary containing collection statistics
+        """
+        stats = self.hybrid_engine.get_collection_stats(collection_name)
+        
+        return {
+            "code": 200,
+            "success": True,
+            "message": "Collection stats retrieved successfully",
+            "data": stats
+        }
+
+    def rebuild_bm25_index(self, collection_name: str, file_paths: List[str]):
+        """Rebuild BM25 index for a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            file_paths: List of file paths to rebuild index from
+            
+        Returns:
+            Dictionary containing rebuild results
+        """
+        try:
+            # Load and process documents
+            all_chunks = []
+            for file_path in file_paths:
+                if os.path.exists(file_path):
+                    loader = FileLoader(file_path=file_path)
+                    documents = loader.load()
+                    chunks = self.splitter.split_documents(documents)
+                    all_chunks.extend(chunks)
+            
+            if not all_chunks:
+                return {
+                    "code": 400,
+                    "success": False,
+                    "message": "No documents found to build index",
+                    "data": None
+                }
+            
+            # Build BM25 index
+            success = self.hybrid_engine.build_bm25_index(collection_name, all_chunks)
+            
+            return {
+                "code": 200,
+                "success": success,
+                "message": "BM25 index rebuilt successfully" if success else "Failed to rebuild BM25 index",
+                "data": {
+                    "chunks_indexed": len(all_chunks) if success else 0
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error rebuilding BM25 index: {e}")
+            return {
+                "code": 500,
+                "success": False,
+                "message": str(e),
+                "data": None
+            }
+
     def delete_collection(self, collection_name: str):
+        """Delete a collection and its associated BM25 index.
+        
+        Args:
+            collection_name: Name of the collection to delete
+            
+        Returns:
+            Dictionary containing deletion results
+        """
+        # Delete vector store collection
+        vector_result = self.vector_store.delete(collection_name)
+        
+        # Delete BM25 index
+        bm25_result = self.hybrid_engine.clear_bm25_index(collection_name)
+        
         return {
             "code": 200,
             "success": True,
             "message": "Collection deleted successfully",
-            "data": self.vector_store.delete(collection_name),
+            "data": {
+                "vector_store": vector_result,
+                "bm25_index_cleared": bm25_result
+            },
         }

@@ -175,5 +175,6 @@ export const endpoints = {
     workspaces: `${VERSION_PREFIX}/files/workspaces`,
     workspace: (workspaceSlug: string) => `${VERSION_PREFIX}/files/workspace/${workspaceSlug}`,
     query: (workspaceSlug: string) => `${VERSION_PREFIX}/files/workspace/${workspaceSlug}/query`,
+    messages: (workspaceSlug: string) => `${VERSION_PREFIX}/files/workspace/${workspaceSlug}/messages`,
   },
 }

@@ -10,9 +10,11 @@ export default interface Keystore {
   _id: Types.ObjectId
   client: User
   publicKey: string
-  refreshToken: string
+  refreshToken?: string
   refreshTokensUsed: string[]
   status?: boolean
+  signature?: string // For token signature verification
+  keyId?: string // Reference to user's key pair
 }
 
 const keyTokenSchema = new Schema(
@@ -29,7 +31,17 @@ const keyTokenSchema = new Schema(
     },
     refreshToken: {
       type: Schema.Types.String,
-      required: true,
+      required: false,
+      trim: true
+    },
+    signature: {
+      type: Schema.Types.String,
+      required: false,
+      trim: true
+    },
+    keyId: {
+      type: Schema.Types.String,
+      required: false,
       trim: true
     },
     refreshTokensUsed: {

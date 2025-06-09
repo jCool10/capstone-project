@@ -11,8 +11,36 @@ export interface IWorkspace {
 
 export interface IMessage {
   _id?: string
-  content: string
-  role: "user" | "assistant"
   workspaceSlug?: string
   createdAt?: string
+
+  // Backend format
+  message?: string
+  type?: "userMessage" | "apiMessage"
+  sourceDocs?: string[]
+
+  // Frontend format
+  content?: string
+  role?: "user" | "assistant"
+  sourceDocuments?: SourceDocument[]
+}
+
+// Extended message interface to handle all possible properties
+export interface ExtendedMessage extends IMessage {
+  message: string
+  type: "userMessage" | "apiMessage"
+  sourceDocs: string[]
+  content: string
+  role: "user" | "assistant"
+  sourceDocuments: SourceDocument[]
+}
+
+export interface SourceDocument {
+  id: string
+  content: string
+  metadata: {
+    source: string
+    page?: number
+    score?: number
+  }
 }

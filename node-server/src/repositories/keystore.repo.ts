@@ -30,10 +30,12 @@ async function find(client: User, primaryKey: string, secondaryKey: string) {
     .exec()
 }
 
-async function create(client: User, publicKey: string) {
+async function create(client: User, publicKey: string, signature?: string, keyId?: string) {
   const filter = { client: client }
-  const update = { publicKey: publicKey }
-  const options = { upsert: true }
+  const update: any = { publicKey: publicKey }
+  if (signature) update.signature = signature
+  if (keyId) update.keyId = keyId
+  const options = { upsert: true, new: true }
   return KeystoreModel.findOneAndUpdate(filter, update, options)
 }
 

@@ -12,4 +12,5 @@ export const filesRouter = (router: Router) => {
   router.get('/workspaces', catchAsync(FilesController.getWorkspaces))
   router.get('/workspace/:workspaceSlug', catchAsync(FilesController.getWorkspace))
   router.post('/workspace/:workspaceSlug/query', catchAsync(FilesController.queryWorkspace))
+  router.get('/workspace/:workspaceSlug/messages', catchAsync(FilesController.getMessages))
 }

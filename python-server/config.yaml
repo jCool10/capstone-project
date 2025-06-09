@@ -43,6 +43,25 @@ vector_store:
   uri: "http://localhost:19530"
   embedding_name: "bge-m3"
 
+# Hybrid Search Configuration
+hybrid_search:
+  enabled: true
+  dense_weight: 0.6 # α parameter for linear fusion
+  sparse_weight: 0.4 # (1-α) parameter for linear fusion
+  fusion_method: "rrf" # "rrf" or "linear"
+  initial_k: 20 # Retrieve more docs initially
+  final_k: 5 # Final result count
+
+  # BM25 Configuration
+  bm25:
+    k1: 1.2 # Term frequency saturation
+    b: 0.75 # Length normalization
+    tokenizer: "vietnamese" # Tokenization method
+    language: "vietnamese" # Language-specific processing
+
+# BM25 Index Storage
+bm25_index_dir: "data/bm25_indices"
+
 # Device configuration
 device: "mps" # Options: "auto", "cuda", "mps", "cpu"
 

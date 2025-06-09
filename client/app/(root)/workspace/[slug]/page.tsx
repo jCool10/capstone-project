@@ -2,7 +2,7 @@
 
 import React, { Fragment, useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
-import { getWorkspace, queryWorkspace } from "@/apis/files"
+import { getMessages, getWorkspace, queryWorkspace } from "@/apis/files"
 import { IMessage, IWorkspace } from "@/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Bot, Edit, FileText, Info, Plus, Send, Sparkles, Upload, User } from "lucide-react"
@@ -24,6 +24,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import FileUploader, { FileWithMetadata } from "@/components/FileUploader"
+import EmbedStatusBanner from "@/components/shared/EmbedStatusBanner"
+import SourceDocumentsButton from "@/components/shared/SourceDocumentsButton"
+import SourceDocumentsModal from "@/components/shared/SourceDocumentsModal"
 
 // Extend workspace type for this component
 interface ExtendedWorkspace extends IWorkspace {
@@ -42,6 +45,9 @@ export default function WorkspacePage() {
   const [showRightPanel, setShowRightPanel] = useState(false)
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [uploadFiles, setUploadFiles] = useState<FileWithMetadata[]>([])
+  const [selectedSourceDocs, setSelectedSourceDocs] = useState<any[] | null>(null)
+  const [showReEmbedDialog, setShowReEmbedDialog] = useState(false)
+  const [isReEmbedding, setIsReEmbedding] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
@@ -54,6 +60,41 @@ export default function WorkspacePage() {
   // Access workspace with extended type
   const workspaceData = workspace?.workspace as ExtendedWorkspace
 
+  const { data: messagesData } = useQuery({
+    queryKey: ["messages", slug],
+    queryFn: () => getMessages(slug as string),
+  })
+
+  useEffect(() => {
+    if (messagesData) {
+      // Transform messages from backend format to frontend format
+      const transformedMessages: IMessage[] = []
+      messagesData.forEach((messageGroup: any) => {
+        if (messageGroup.messages) {
+          messageGroup.messages.forEach((msg: any) => {
+            transformedMessages.push({
+              _id: messageGroup._id + "_" + Math.random().toString(36).substr(2, 9),
+              message: msg.message,
+              type: msg.type,
+              workspaceSlug: messageGroup.workspaceSlug,
+              sourceDocs: msg.sourceDocs || [],
+              // For backward compatibility
+              content: msg.message,
+              role: msg.type === "userMessage" ? "user" : "assistant",
+              sourceDocuments:
+                msg.sourceDocs?.map((doc: string) => ({
+                  id: Math.random().toString(36).substr(2, 9),
+                  content: doc,
+                  metadata: { source: "document" },
+                })) || [],
+            })
+          })
+        }
+      })
+      setMessages(transformedMessages)
+    }
+  }, [messagesData])
+
   const { mutate: queryWorkspaceMutation } = useMutation({
     mutationFn: (question: string) => queryWorkspace(slug as string, question),
     onSuccess: (data) => {
@@ -61,10 +102,19 @@ export default function WorkspacePage() {
       setMessages((prev) => [
         ...prev,
         {
-          content: data.data.response,
-          role: "assistant",
+          message: data.data.response,
+          type: "apiMessage" as const,
           workspaceSlug: slug as string,
-        },
+          sourceDocs: data.data.sourceDocuments || [],
+          content: data.data.response,
+          role: "assistant" as const,
+          sourceDocuments:
+            data.data.sourceDocuments?.map((doc: any) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              content: typeof doc === "string" ? doc : doc.text || doc.content || "",
+              metadata: { source: doc.fileName || "document" },
+            })) || [],
+        } as IMessage,
       ])
     },
   })
@@ -102,12 +152,6 @@ export default function WorkspacePage() {
     },
   })
 
-  useEffect(() => {
-    if (workspace) {
-      setMessages(workspace.messages)
-    }
-  }, [workspace])
-
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -128,11 +172,13 @@ export default function WorkspacePage() {
   const handleSend = async () => {
     if (!input.trim()) return
 
-    const userMessage: IMessage = {
-      content: input,
-      role: "user",
+    const userMessage = {
+      message: input,
+      type: "userMessage" as const,
       workspaceSlug: slug as string,
-    }
+      content: input,
+      role: "user" as const,
+    } as IMessage
 
     setMessages((prev) => [...prev, userMessage])
     setInput("")
@@ -144,6 +190,14 @@ export default function WorkspacePage() {
       e.preventDefault()
       handleSend()
     }
+  }
+
+  const openSourceDocs = (sourceDocuments: any[]) => {
+    setSelectedSourceDocs(sourceDocuments)
+  }
+
+  const closeSourceDocs = () => {
+    setSelectedSourceDocs(null)
   }
 
   const handleUpload = async () => {
@@ -217,26 +271,49 @@ export default function WorkspacePage() {
                 </div>
               )}
 
-              {messages.map((message) => (
-                <div key={message._id} className="flex items-start gap-4 flex-row">
-                  <Avatar
-                    className={cn("h-8 w-8 shrink-0", message.role === "assistant" ? "bg-muted" : "bg-primary/10")}
+              {messages.map((message) => {
+                // Support both backend and frontend message formats
+                const msg = message as any
+                const messageType = msg.type || (msg.role === "user" ? "userMessage" : "apiMessage")
+                const messageContent = msg.message || msg.content || ""
+                const isApiMessage = messageType === "apiMessage"
+                const sourceDocuments =
+                  msg.sourceDocuments ||
+                  msg.sourceDocs?.map((doc: string) => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    content: doc,
+                    metadata: { source: "document" },
+                  })) ||
+                  []
+
+                return (
+                  <div
+                    key={message._id || Math.random().toString(36).substr(2, 9)}
+                    className="flex items-start gap-4 flex-row"
                   >
-                    {message.role === "assistant" ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="font-medium mb-1">{message.role === "assistant" ? "AI Assistant" : "You"}</div>
-                    <Card
-                      className={cn(
-                        "p-3 w-fit max-w-full",
-                        message.role === "assistant" ? "bg-muted" : "bg-primary text-primary-foreground"
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    </Card>
+                    <Avatar className={cn("h-8 w-8 shrink-0", isApiMessage ? "bg-muted" : "bg-primary/10")}>
+                      {isApiMessage ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-medium mb-1">{isApiMessage ? "AI Assistant" : "You"}</div>
+                      <Card
+                        className={cn(
+                          "p-3 w-fit max-w-full",
+                          isApiMessage ? "bg-muted" : "bg-primary text-primary-foreground"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap">{messageContent}</p>
+                        {isApiMessage && sourceDocuments && sourceDocuments.length > 0 && (
+                          <SourceDocumentsButton
+                            sourceDocuments={sourceDocuments}
+                            onClick={() => openSourceDocs(sourceDocuments)}
+                          />
+                        )}
+                      </Card>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
               {isLoading && (
                 <div className="flex items-start gap-4">
@@ -425,6 +502,13 @@ export default function WorkspacePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Source Documents Modal */}
+      <SourceDocumentsModal
+        isOpen={selectedSourceDocs !== null}
+        onClose={closeSourceDocs}
+        sourceDocuments={selectedSourceDocs || []}
+      />
     </div>
   )
 }

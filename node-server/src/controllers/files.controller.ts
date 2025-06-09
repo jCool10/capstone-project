@@ -36,4 +36,18 @@ export class filesController {
       data: await this.filesService.queryWorkspace(req)
     }).send(res)
   }
+
+  reEmbedFiles = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Files re-embedded successfully',
+      data: await this.filesService.reEmbedFiles(req)
+    }).send(res)
+  }
+
+  getMessages = async (req: Request, res: Response) => {
+    new SuccessResponse({
+      message: 'Messages fetched successfully',
+      data: await this.filesService.getMessages(req)
+    }).send(res)
+  }
 }
