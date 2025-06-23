@@ -184,6 +184,39 @@ retriever = VectorIndexRetriever(
 nodes = retriever.retrieve("Câu truy vấn")
 ```
 
+## 🚀 Quick Start - RAG Evaluation
+
+### Chạy đánh giá RAG hoàn chỉnh (Khuyến nghị):
+
+```bash
+# Khởi động Milvus trước
+sudo docker compose up -d
+
+# Chạy evaluation pipeline hoàn chỉnh (embed data + evaluate)
+python run_evaluation.py
+```
+
+Pipeline này sẽ tự động:
+- ✅ Kiểm tra và embed data từ `data/sample_documents.txt`
+- ✅ Đánh giá 3 phương pháp: Dense, Sparse, Hybrid search
+- ✅ So sánh hiệu suất và lưu kết quả
+- ✅ In summary chi tiết
+
+### Hoặc chạy với tùy chọn nâng cao:
+
+```bash
+# Chạy với collection tùy chỉnh
+python evaluation/rag_evaluator.py --collection my_collection --data data/my_documents.txt
+
+# Force re-embed data
+python evaluation/rag_evaluator.py --force-reembed
+
+# Sử dụng ground truth khác
+python evaluation/rag_evaluator.py --ground-truth data/my_ground_truth.json
+```
+
+📋 **Xem hướng dẫn chi tiết**: [evaluation/COMPLETE_EVALUATION_GUIDE.md](evaluation/COMPLETE_EVALUATION_GUIDE.md)
+
 ## Cài đặt và chạy
 
 ### Cài đặt môi trường:

@@ -14,7 +14,7 @@ from core.retrievers.hybrid_searcher import HybridSearchEngine
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-LLM_API = "http://34.81.24.168:8000/v1/chat/completions"
+LLM_API = "http://35.221.160.224:8000/v1/chat/completions"
 
 class RAGService:
     def __init__(self, max_workers: int = 4):
@@ -193,7 +193,7 @@ class RAGService:
             },
         }
 
-    def _create_prompt_from_docs(self, query: str, docs: List[Dict], history: List[Dict]) -> str:
+    def _create_prompt_from_docs(self, query: str, docs: List[Dict], history: List[str] = None) -> str:
         """Create a prompt from retrieved documents for LLM processing.
 
         Args:
@@ -223,7 +223,7 @@ class RAGService:
         Ngữ cảnh:
         {context}
 
-        Các câu hỏi trước đó (nếu có):
+        {"LỊCH SỬ CUỘC TRÒ CHUYỆN:" if history else ""}
         {history}
 
         Câu hỏi hiện tại:
@@ -231,6 +231,7 @@ class RAGService:
 
         Yêu cầu:
         - Trả lời ngắn gọn, đúng trọng tâm, dựa trên ngữ cảnh.
+        - Ưu tiên thông tin từ tài liệu được cung cấp để trả lời
         - Nếu không đủ thông tin, hãy nói rõ là chưa có thông tin.
         - Không bịa thêm nội dung ngoài ngữ cảnh.
         """

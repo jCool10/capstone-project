@@ -165,10 +165,10 @@ const VERSION_PREFIX = "api"
 
 export const endpoints = {
   auth: {
-    login: `${VERSION_PREFIX}/login`,
-    register: `${VERSION_PREFIX}/register`,
-    logout: `${VERSION_PREFIX}/logout`,
-    refreshToken: `${VERSION_PREFIX}/refresh-token`,
+    login: `${VERSION_PREFIX}/auth/login`,
+    register: `${VERSION_PREFIX}/auth/register`,
+    logout: `${VERSION_PREFIX}/auth/logout`,
+    refreshToken: `${VERSION_PREFIX}/auth/refresh-token`,
   },
   files: {
     embed: `${VERSION_PREFIX}/files/embed`,

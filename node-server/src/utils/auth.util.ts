@@ -12,11 +12,15 @@ export const authentication = catchAsync(async (req: Request, res: Response, nex
   const refreshToken = req.headers['refresh-token'] as string
   const clientId = req.headers['client-id'] as string
 
+  console.log(accessToken, refreshToken, clientId)
+
   if (!accessToken && !refreshToken) {
     throw new UnauthorizedError('Unauthorized')
   }
 
   const keyStore = await KeystoreModel.findOne({ client: new mongoose.Types.ObjectId(clientId) }).lean()
+
+  console.log(keyStore)
 
   if (!keyStore) {
     throw new NotFoundError('Key not found')
@@ -28,6 +32,9 @@ export const authentication = catchAsync(async (req: Request, res: Response, nex
     if (!decodedUser) {
       throw new UnauthorizedError('Unauthorized')
     }
+
+    console.log(decodedUser)
+    console.log(keyStore)
 
     req.user = decodedUser
     req.keyStore = keyStore

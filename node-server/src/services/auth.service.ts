@@ -165,9 +165,12 @@ export class authService {
       sessionId: req.keyStore._id.toString()
     }
 
+    console.log(1, logoutData)
+
     try {
       // Sign logout event (optional, for audit purposes)
       await this.encryptionService.signData(JSON.stringify(logoutData), req.user._id)
+      console.log(2)
     } catch (error) {
       // Don't fail logout if signing fails
       console.warn('Failed to sign logout event:', error)
