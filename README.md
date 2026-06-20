@@ -1,218 +1,182 @@
-# 🎓 Capstone Project - Hệ thống RAG Chat với PDF
+# 🎓 RAG Chat with PDF — Capstone Project
 
-Dự án capstone này là một hệ thống trò chuyện thông minh sử dụng kỹ thuật **Retrieval-Augmented Generation (RAG)** để truy xuất và trả lời câu hỏi từ các tài liệu PDF. Hệ thống được xây dựng với kiến trúc microservices hiện đại, bao gồm frontend React/Next.js, backend Node.js, và RAG service Python.
+Intelligent document analysis using Retrieval-Augmented Generation (RAG). Stack: Next.js frontend, Express API, Python RAG service, Milvus vector DB.
 
-## 🏗️ Kiến trúc hệ thống
+## 🏗️ System Architecture
 
 ```mermaid
 graph TB
-    Client[Frontend - Next.js] --> NodeAPI[Backend API - Node.js]
-    NodeAPI --> MongoDB[(MongoDB Database)]
-    NodeAPI --> S3[AWS S3 Storage]
-    NodeAPI --> PythonRAG[Python RAG Service]
-    PythonRAG --> Milvus[(Milvus Vector DB)]
-    PythonRAG --> HuggingFace[HuggingFace Models]
+    Client[Frontend - Next.js 14]
+    API[Backend API - Express]
+    Mongo[(MongoDB)]
+    S3[AWS S3]
+    RAG[RAG Service - FastAPI]
+    Milvus[(Milvus Vector DB)]
+    BM25[BM25 Index]
+    LLM[External LLM]
 
-    subgraph "Vector Database Stack"
-        Milvus
-        MinIO[MinIO Object Storage]
-        ETCD[ETCD Configuration]
-    end
+    Client -->|REST API| API
+    API --> Mongo
+    API --> S3
+    API --> RAG
+    RAG --> Milvus
+    RAG --> BM25
+    RAG -.->|HTTP| LLM
 ```
 
-## 🚀 Các thành phần chính
+## 🚀 Key Features
 
-### 1. **Frontend (Next.js)** - `./client/`
+- 💬 Chat interface with source-attributed answers
+- 📄 PDF, DOCX, TXT support
+- 🔍 Hybrid search (dense embeddings + BM25) with cross-encoder reranking
+- 🔐 JWT RS256 auth, per-user RSA encryption, workspace isolation
+- 🌙 Light/dark theme
+- 📊 Microservice architecture
 
-- ⚡ Next.js 14 với App Router
-- 🎨 Tailwind CSS + Radix UI components
-- 🔐 Authentication với JWT
-- 📱 Responsive design
-- 💬 Real-time chat interface
+## 🛠️ Tech Stack
 
-### 2. **Backend API (Node.js)** - `./node-server/`
+| Layer | Stack |
+|-------|-------|
+| Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind + shadcn/ui, React Query, React Hook Form + Zod |
+| Backend | Express, TypeScript, Mongoose, JWT RS256, AWS S3, Winston, Helmet |
+| RAG | FastAPI, BAAI/bge-m3 (1024-dim), Milvus 2.3, BM25, cross-encoder reranker, remote LLM (Llama 3.2 3B) |
+| Infra | Docker Compose: etcd, MinIO, Milvus, Python, Node, Next.js |
 
-- 🚀 Express.js với TypeScript
-- 🔐 JWT Authentication & Authorization
-- 📁 File upload với AWS S3
-- 📊 MongoDB với Mongoose
-- 📝 Logging với Winston
-- 🔒 Security với Helmet, CORS, Rate limiting
+## 📋 Prerequisites
 
-### 3. **RAG Service (Python)** - `./python-server/`
+- Docker 20.10+ and Docker Compose 2.0+
+- 8 GB RAM, 20 GB disk
+- (Optional) Node 18+, Python 3.11 for local dev
 
-- 🤖 RAG pipeline với LangChain
-- 🧠 HuggingFace Embeddings
-- 🔍 Milvus Vector Database
-- 📄 PDF processing
-- 🔄 Hybrid search (Vector + BM25)
-
-### 4. **Vector Database Stack**
-
-- 🗄️ Milvus - Vector database
-- 📦 MinIO - Object storage
-- ⚙️ ETCD - Configuration management
-
-### 5. **Translation Service** - `./translator/`
-
-- 🌐 Đa ngôn ngữ support
-- 🔄 VinAI translation provider
-
-## 🛠️ Cài đặt và chạy dự án
-
-### Yêu cầu hệ thống
-
-- 🐳 Docker & Docker Compose
-- 📦 Node.js 18+ (cho development)
-- 🐍 Python 3.9+ (cho development)
-- 💾 RAM tối thiểu: 8GB
-- 💿 Disk space: 10GB+
-
-### 🚀 Quick Start với Docker
-
-1. **Clone repository**
+## 🚀 Quick Start
 
 ```bash
 git clone <repository-url>
 cd capstone-project
-```
-
-2. **Cấu hình environment**
-
-```bash
-cp env.example .env
-# Chỉnh sửa các biến môi trường trong file .env
-```
-
-3. **Khởi động toàn bộ hệ thống**
-
-```bash
+cp env.example .env          # fill in DB_URL, AWS_*, etc
 docker-compose up -d
+docker-compose ps            # wait ~2 min for Milvus
 ```
 
-4. **Kiểm tra trạng thái services**
+Access:
 
-```bash
-docker-compose ps
-```
+- Frontend: http://localhost:3000
+- API: http://localhost:3001/api
+- RAG: http://localhost:8080
+- MinIO Console: http://localhost:9001
 
-### 🌐 Truy cập ứng dụng
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **Python RAG Service**: http://localhost:8080
-- **Milvus Database**: http://localhost:19530
-- **MinIO Console**: http://localhost:9001
-
-## 📝 Environment Variables
-
-Tạo file `.env` từ `env.example` và cấu hình các biến sau:
-
-```bash
-# Database
-DB_URL=mongodb://localhost:27017/capstone
-
-# JWT
-ACCESS_TOKEN_VALIDITY_SEC=3600
-REFRESH_TOKEN_VALIDITY_SEC=604800
-
-# AWS S3
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_REGION=ap-southeast-1
-AWS_BUCKET=your_bucket_name
-
-# Frontend
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-
-# AI Models
-EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
-HUGGING_FACE_HUB_TOKEN=your_hf_token
-```
-
-## 🧪 Development Setup
-
-### Frontend Development
-
-```bash
-cd client
-yarn install
-yarn dev
-```
-
-### Backend Development
-
-```bash
-cd node-server
-yarn install
-yarn dev
-```
-
-### Python RAG Service Development
-
-```bash
-cd python-server
-pip install -r requirements.txt
-python app/main.py
-```
-
-## 📊 API Endpoints
-
-### Authentication
-
-- `POST /api/auth/register` - Đăng ký tài khoản
-- `POST /api/auth/login` - Đăng nhập
-- `POST /api/auth/refresh` - Refresh token
-
-### File Management
-
-- `POST /api/files/upload` - Upload PDF file
-- `GET /api/files` - Lấy danh sách files
-- `DELETE /api/files/:id` - Xóa file
-
-### Chat/RAG
-
-- `POST /api/chat` - Gửi câu hỏi và nhận phản hồi RAG
-
-## 🗂️ Cấu trúc thư mục chi tiết
+## 📁 Project Structure
 
 ```
 capstone-project/
-├── client/                 # Frontend Next.js
-│   ├── app/               # Next.js App Router
-│   │   ├── components/        # React components
-│   │   ├── hooks/            # Custom hooks
-│   │   ├── utils/            # Utilities
-│   │   └── types/            # TypeScript types
-│   │
-│   ├── node-server/          # Backend Node.js
-│   │   ├── src/
-│   │   │   ├── controllers/   # Route controllers
-│   │   │   ├── models/       # MongoDB models
-│   │   │   ├── services/     # Business logic
-│   │   │   ├── middlewares/  # Express middlewares
-│   │   │   └── routes/       # API routes
-│   │   └── uploads/          # File uploads
-│   │
-│   ├── python-server/        # RAG Service Python
-│   │   ├── app/
-│   │   │   ├── core/         # Core RAG components
-│   │   │   └── services/     # RAG services
-│   │   ├── data/             # Sample documents
-│   │   └── evaluation/       # RAG evaluation
-│   │
-│   ├── translator/           # Translation service
-│   │   ├── configs/          # Translation configs
-│   │   └── providers/        # Translation providers
-│   │
-│   └── docker-compose.yml    # Docker services configuration
+├── client/             # Next.js 14 frontend
+├── node-server/        # Express API (TypeScript)
+├── python-server/      # FastAPI RAG service
+├── translator/         # EN→VI translation pipeline
+├── llm/                # LLM fine-tuning scripts
+├── docs/               # English documentation
+├── docker-compose.yml
+└── env.example
 ```
 
-## 🧪 Testing & Evaluation
+See [docs/codebase-summary.md](./docs/codebase-summary.md) for per-service trees.
 
-### RAG Evaluation
+## 📚 Documentation
 
+| Document | Purpose |
+|----------|---------|
+| [project-overview-pdr.md](./docs/project-overview-pdr.md) | Product goals, scope, acceptance criteria |
+| [codebase-summary.md](./docs/codebase-summary.md) | Service breakdown, dependencies, APIs |
+| [code-standards.md](./docs/code-standards.md) | TypeScript/Python conventions, error handling |
+| [system-architecture.md](./docs/system-architecture.md) | Detailed diagrams, data flows |
+| [deployment-guide.md](./docs/deployment-guide.md) | Docker setup, troubleshooting, scaling |
+| [project-roadmap.md](./docs/project-roadmap.md) | Status, known issues, future phases |
+| [design-guidelines.md](./docs/design-guidelines.md) | UI design system, components |
+
+## 💻 Local Development
+
+```bash
+# Frontend
+cd client && yarn install && yarn dev          # :3000
+
+# Backend
+cd node-server && yarn install && yarn dev     # :3000
+
+# RAG service
+cd python-server
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python app/main.py                             # :8080
 ```
 
+Full-stack without Docker requires local MongoDB + Milvus — see [deployment-guide.md](./docs/deployment-guide.md).
+
+## 🧪 API Surface
+
+**Auth (`/api/auth/*`):** `register`, `login`, `logout`, `refresh-token`, `rotate-keys`, `public-key/:userId`, `encrypt`, `decrypt`
+
+**Files (`/api/files/*`):** `embed` (multipart), `workspaces`, `workspace/:slug`, `workspace/:slug/query`, `workspace/:slug/messages`
+
+**RAG service:** `GET /` health, `POST /query`, `POST /embed`
+
+See [codebase-summary.md](./docs/codebase-summary.md) for request/response shapes.
+
+## ⚙️ Environment Variables
+
+```bash
+DB_URL="mongodb+srv://..."
+ACCESS_TOKEN_VALIDITY_SEC=3600
+REFRESH_TOKEN_VALIDITY_SEC=86400
+AWS_ACCESS_KEY_ID="..."
+AWS_SECRET_ACCESS_KEY="..."
+AWS_REGION="us-east-1"
+AWS_BUCKET="..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://localhost:3001/api"
+EMBEDDING_MODEL="BAAI/bge-base-en-v1.5"
+HUGGING_FACE_HUB_TOKEN="..."
+MILVUS_URI="http://milvus:19530"
+MASTER_ENCRYPTION_KEY="..."
 ```
+
+Full reference in [deployment-guide.md](./docs/deployment-guide.md).
+
+## ✅ Health Checks
+
+```bash
+docker-compose ps
+curl http://localhost:3000           # Frontend
+curl http://localhost:3001/health    # API
+curl http://localhost:8080/          # RAG
+curl http://localhost:9091/healthz   # Milvus
+```
+
+## 🐛 Troubleshooting
+
+- **Milvus slow to start:** increase `milvus.healthcheck.start_period` in `docker-compose.yml`
+- **Mongo connection fails:** verify `DB_URL`, IP allowlist (Atlas), or local service
+- **Python service crashes:** `docker-compose logs python-server`, then `docker-compose build python-server`
+
+More in [deployment-guide.md](./docs/deployment-guide.md#troubleshooting).
+
+## 🗺️ Roadmap Highlights
+
+- Tests (Jest + pytest) and CI/CD
+- Move hardcoded LLM IP to env var
+- Rate-limit auth endpoints (deps already installed)
+- Consolidate dual file-upload paths and duplicate `useAuth` hook
+- Observability (Prometheus + Grafana)
+- Kubernetes migration
+
+Full backlog in [project-roadmap.md](./docs/project-roadmap.md).
+
+## 🤝 Contributing
+
+1. Read [code-standards.md](./docs/code-standards.md)
+2. Branch: `git checkout -b feature/your-feature`
+3. Commit with [Conventional Commits](https://www.conventionalcommits.org/)
+4. Open a PR
+
+---
+
+**Last Updated:** 2026-06-20
